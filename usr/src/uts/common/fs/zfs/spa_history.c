@@ -23,6 +23,7 @@
  * Copyright (c) 2006, 2010, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2011, 2015 by Delphix. All rights reserved.
  * Copyright (c) 2014 Integros [integros.com]
+ * Copyright 2017 Joyent, Inc.
  */
 
 #include <sys/spa.h>
@@ -192,6 +193,16 @@ spa_history_zone(void)
 }
 
 /*
+ * Post a history sysevent.  The nvlist_t* passed into this function will be
+ * duplicated and should be freed by caller.
+ */
+static void
+spa_history_log_notify(spa_t *spa, nvlist_t *nvl)
+{
+	spa_event_notify(spa, NULL, nvl, ESC_ZFS_HISTORY_EVENT);
+}
+
+/*
  * Write out a history event.
  */
 /*ARGSUSED*/
@@ -255,6 +266,22 @@ spa_history_log_sync(void *arg, dmu_tx_t *tx)
 			    fnvlist_lookup_string(nvl, ZPOOL_HIST_INT_NAME),
 			    fnvlist_lookup_string(nvl, ZPOOL_HIST_INT_STR));
 		}
+		/*
+		 * The history sysevent is posted only for internal history
+		 * messages to show what has happened, not how it happened. For
+		 * example, the following command:
+		 *
+		 * # zfs destroy -r tank/foo
+		 *
+		 * will result in one sysevent posted per dataset that is
+		 * destroyed as a result of the command - which could be more
+		 * than one event in total.  By contrast, if the sysevent was
+		 * posted as a result of the ZPOOL_HIST_CMD key being present,
+		 * it would result in only one sysevent being posted with the
+		 * full command line arguments, requiring the consumer to know
+		 * how to parse and understand zfs(1M) command invocations.
+		 */
+		spa_history_log_notify(spa, nvl);
 	} else if (nvlist_exists(nvl, ZPOOL_HIST_IOCTL)) {
 		zfs_dbgmsg("ioctl %s",
 		    fnvlist_lookup_string(nvl, ZPOOL_HIST_IOCTL));
