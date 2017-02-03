@@ -24,6 +24,7 @@
  * Copyright (c) 2011, 2015 by Delphix. All rights reserved.
  * Copyright 2015 Nexenta Systems, Inc.  All rights reserved.
  * Copyright (c) 2014 Integros [integros.com]
+ * Copyright 2017 Joyent, Inc.
  */
 
 #include <sys/zfs_context.h>
@@ -2486,7 +2487,7 @@ vdev_online(spa_t *spa, uint64_t guid, uint64_t flags, vdev_state_t *newstate)
 	}
 
 	if (postevent)
-		spa_event_notify(spa, vd, ESC_ZFS_VDEV_ONLINE);
+		spa_event_notify(spa, vd, NULL, ESC_ZFS_VDEV_ONLINE);
 
 	return (spa_vdev_state_exit(spa, vd, 0));
 }
@@ -2649,7 +2650,7 @@ vdev_clear(spa_t *spa, vdev_t *vd)
 		if (vd->vdev_aux == NULL && !vdev_is_dead(vd))
 			spa_async_request(spa, SPA_ASYNC_RESILVER);
 
-		spa_event_notify(spa, vd, ESC_ZFS_VDEV_CLEAR);
+		spa_event_notify(spa, vd, NULL, ESC_ZFS_VDEV_CLEAR);
 	}
 
 	/*
